@@ -3,7 +3,7 @@ import os
 
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
-ldap_user = os.getenv('AD_SEARCH_UN')
+ldap_user = "BUUNK/ldap-search"
 ldap_password = os.getenv('AD_SEARCH_PW')
 
 print(ldap_user)
