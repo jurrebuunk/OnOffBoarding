@@ -11,7 +11,7 @@ new_username = 'newuser'
 new_password = 'P@ssw0rd123'
 first_name = 'New'
 last_name = 'User'
-user_dn = f'cn={new_username},ou=Users,dc=buunk,dc=org'
+user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
 
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
