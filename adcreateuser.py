@@ -6,6 +6,9 @@ ldap_server = 'ldap://192.168.2.14'
 ldap_user = os.getenv('AD_SEARCH_UN')
 ldap_password = os.getenv('AD_SEARCH_PW')
 
+print(ldap_user)
+print(ldap_password)
+
 # New user details
 new_username = 'newuser'
 new_password = 'P@ssw0rd123'
