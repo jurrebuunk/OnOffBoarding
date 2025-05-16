@@ -1,10 +1,14 @@
 from ldap3 import Server, Connection, ALL
 import json
+import os
 
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
-ldap_user = 'LDAP Search Helper'
-ldap_password = 'DRPpgbzxr2CS6XMqYBZv'
+ldap_user = os.getenv('AD_SEARCH_UN')
+ldap_password = os.getenv('AD_SEARCH_PW')
+
+print(ldap_user)
+print(ldap_password)
 
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
