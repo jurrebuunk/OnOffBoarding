@@ -7,9 +7,6 @@ ldap_server = 'ldap://192.168.2.14'
 ldap_user = os.getenv('AD_SEARCH_UN')
 ldap_password = os.getenv('AD_SEARCH_PW')
 
-print(ldap_user)
-print(ldap_password)
-
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
 conn = Connection(server, user=ldap_user, password=ldap_password, auto_bind=True)
