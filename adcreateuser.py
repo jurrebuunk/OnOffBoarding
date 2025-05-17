@@ -13,6 +13,11 @@ first_name = os.getenv('firstname')
 last_name = os.getenv('lastname')
 user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
 
+print("username:", new_username)
+print("firstname:", first_name)
+print("lastname:", last_name)
+print("password:", new_password)
+
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
 conn = Connection(server, user=ldap_user, password=ldap_password, authentication=NTLM, auto_bind=True)
