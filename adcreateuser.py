@@ -15,7 +15,7 @@ password = "Welkom01"
 givenName = os.getenv('givenName')
 surname = os.getenv('surname')
 
-user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
+user_dn = f'cn={sAMAccountName},ou=Domain-Users,dc=buunk,dc=org'
 
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
