@@ -1,13 +1,18 @@
 from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
 import os
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--my-var')
+args = parser.parse_args()
+
+print(args.my_var)  # prints "waarde"
+
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
 ldap_user = "BUUNK\\ldap-search"
 ldap_password = os.getenv('AD_SEARCH_PW')
-
-
-print(os.getenv("MY_VAR"))
 
 print(ldap_user)
 print(ldap_password)
