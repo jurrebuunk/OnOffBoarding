@@ -26,13 +26,13 @@ conn.add(user_dn, ['top', 'person', 'organizationalPerson', 'user'], {
     'cn': sAMAccountName,
     'givenName': givenName,
     'sn': surname,
-    'displayName': f'{first_name} {last_name}',
+    'displayName': f'{givenName} {surname}',
     'sAMAccountName': sAMAccountName,
-    'userPrincipalName': f'{new_username}@buunk.org'
+    'userPrincipalName': f'{sAMAccountName}@buunk.org'
 })
 
 # Set the user's password
-conn.extend.microsoft.modify_password(user_dn, new_password)
+conn.extend.microsoft.modify_password(user_dn, password)
 
 # Enable the user account
 conn.modify(user_dn, {
