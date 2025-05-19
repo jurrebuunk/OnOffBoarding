@@ -32,7 +32,7 @@ print("mail:", email)
 print("telephoneNumber:", telephone)
 print("password:", password)
 
-user_dn = f'cn={sam_account_name},ou=Domain-Users,dc=buunk,dc=org'
+user_dn = f'cn={cn},ou=Domain-Users,dc=buunk,dc=org'
 
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
