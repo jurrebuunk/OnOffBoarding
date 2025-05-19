@@ -21,6 +21,17 @@ telephone = os.getenv('telephoneNumber') or ''
 
 password = "Welkom01"
 
+print("cn:", cn)
+print("givenName:", given_name)
+print("sn:", surname)
+print("initials:", initials)
+print("name:", name)
+print("userPrincipalName:", user_principal_name)
+print("sAMAccountName:", sam_account_name)
+print("mail:", email)
+print("telephoneNumber:", telephone)
+print("password:", password)
+
 user_dn = f'cn={sam_account_name},ou=Domain-Users,dc=buunk,dc=org'
 
 # Connect to the server
