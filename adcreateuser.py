@@ -46,7 +46,10 @@ conn.add(user_dn, ['top', 'person', 'organizationalPerson', 'user'], {
     'displayName': name,
     'name': name,
     'userPrincipalName': user_principal_name,
-    'sAMAccountName': sam_account_name
+    'sAMAccountName': sam_account_name,
+    'initials': initials,
+    'mail': email,
+    'telephoneNumber': telephone,
 })
 
 # Set the user's password
