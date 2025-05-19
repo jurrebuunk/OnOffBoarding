@@ -1,13 +1,7 @@
 from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
 import os
 
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--my-var')
-args = parser.parse_args()
-
-print(args.my_var)  # prints "waarde"
+print(os.getenv("MY_VAR"))
 
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
@@ -31,7 +25,7 @@ last_name = os.getenv('lastname')
 
 user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
 
-print(os.getenv("MY_VAR"))
+
 
 print("username:", new_username)
 print("firstname:", first_name)
