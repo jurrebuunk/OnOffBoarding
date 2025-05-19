@@ -1,7 +1,7 @@
 from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
 import os
 
-print(os.getenv("MY_ARG"))
+print(os.environ.get("MY_ARG"))
 
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
