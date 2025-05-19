@@ -6,6 +6,8 @@ ldap_server = 'ldap://192.168.2.14'
 ldap_user = "BUUNK/ldap-search"
 ldap_password = os.getenv('AD_SEARCH_PW')
 
+print(os.getenv("MY_VAR"))
+
 print(ldap_user)
 print(ldap_password)
 
