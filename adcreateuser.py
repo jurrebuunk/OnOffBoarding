@@ -9,11 +9,17 @@ ldap_password = os.getenv('AD_SEARCH_PW')
 print(ldap_user)
 print(ldap_password)
 
-# New user details from environment variables
-sAMAccountName = os.getenv('sAMAccountName')
-password = "Welkom01"
-givenName = os.getenv('givenName')
+cn = os.getenv('cn')
+given_name = os.getenv('givenName')
 surname = os.getenv('sn')
+initials = os.getenv('initials') or ''
+name = os.getenv('name')
+user_principal_name = os.getenv('userPrincipalName')
+sam_account_name = os.getenv('sAMAccountName')
+email = os.getenv('mail')
+telephone = os.getenv('telephoneNumber') or ''
+
+password = "Welkom01"
 
 user_dn = f'cn={sAMAccountName},ou=Domain-Users,dc=buunk,dc=org'
 
@@ -23,12 +29,16 @@ conn = Connection(server, user=ldap_user, password=ldap_password, authentication
 
 # Add the new user
 conn.add(user_dn, ['top', 'person', 'organizationalPerson', 'user'], {
-    'cn': sAMAccountName,
-    'givenName': givenName,
+    'cn': cn,
+    'givenName': given_name,
     'sn': surname,
-    'displayName': f'{givenName} {surname}',
-    'sAMAccountName': sAMAccountName,
-    'userPrincipalName': f'{sAMAccountName}@buunk.org'
+    'initials': initials,
+    'displayName': name,
+    'name': name,
+    'userPrincipalName': user_principal_name,
+    'sAMAccountName': sam_account_name,
+    'mail': email,
+    'telephoneNumber': telephone
 })
 
 # Set the user's password
