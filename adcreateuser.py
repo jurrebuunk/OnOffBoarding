@@ -3,9 +3,10 @@ import os
 
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
-ldap_user = "BUUNK/ldap-search"
+ldap_user = "BUUNK\\ldap-search"
 ldap_password = os.getenv('AD_SEARCH_PW')
 
+<<<<<<< HEAD
 print(os.getenv("MY_VAR"))
 
 print(ldap_user)
@@ -16,7 +17,21 @@ new_username = 'newuser'
 new_password = 'P@ssw0rd123'
 first_name = 'New'
 last_name = 'User'
+=======
+# New user details from environment variables
+new_username = os.getenv('username')
+new_password = os.getenv('password')
+first_name = os.getenv('firstname')
+last_name = os.getenv('lastname')
+>>>>>>> c7caf8381b33292ea366cd5d585cc1d452e4b5b9
 user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
+
+print(os.getenv("MY_VAR"))
+
+print("username:", new_username)
+print("firstname:", first_name)
+print("lastname:", last_name)
+print("password:", new_password)
 
 # Connect to the server
 server = Server(ldap_server, get_info=ALL)
