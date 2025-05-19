@@ -13,7 +13,7 @@ print(ldap_password)
 sAMAccountName = os.getenv('sAMAccountName')
 password = "Welkom01"
 givenName = os.getenv('givenName')
-surname = os.getenv('surname')
+surname = os.getenv('sn')
 
 user_dn = f'cn={sAMAccountName},ou=Domain-Users,dc=buunk,dc=org'
 
