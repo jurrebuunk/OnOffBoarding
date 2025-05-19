@@ -1,0 +1,25 @@
+run task
+
+curl -X POST https://semaphore.buunk.org/api/project/1/tasks   -H 'Content-Type: application/json'   -H 'Accept: application/json'   -H 'Authorization: Bearer wiguvkryyipv7javuxkz9qfstckt7pvfvfywrvo9qww='   -d '{
+    "template_id": 2
+  }'
+
+
+curl -X PUT https://semaphore.buunk.org/api/project/1/environment/2   -H 'Content-Type: application/json'   -H 'Accept: application/json'   -H 'Authorization: Bearer wiguvkryyipv7javuxkz9qfstckt7pvfvfywrvo9qww='   -d '{
+    "id": 2,
+    "name": "active-directory-var",
+    "project_id": 1,
+    "password": "string",
+    "json": "{}",
+    "env": "{\"username\":\"newuser\",\"password\":\"P@ssw0rd123\",\"firstname\":\"New\",\"lastname\":\"User\
+"}",
+    "secrets": [
+      {
+        "id": 0,
+        "type": "env",
+        "name": "AD_SEARCH_PW",
+        "secret": "DRPpgbzxr2CS6XMqYBZv",
+        "operation": "create"
+      }
+    ]
+  }'
