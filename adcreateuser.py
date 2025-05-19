@@ -1,8 +1,6 @@
 from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
 import os
 
-print(os.environ.get("MY_ARG"))
-
 # LDAP server and credentials
 ldap_server = 'ldap://192.168.2.14'
 ldap_user = "BUUNK\\ldap-search"
@@ -11,12 +9,6 @@ ldap_password = os.getenv('AD_SEARCH_PW')
 print(ldap_user)
 print(ldap_password)
 
-# New user details
-new_username = 'newuser'
-new_password = 'P@ssw0rd123'
-first_name = 'New'
-last_name = 'User'
-
 # New user details from environment variables
 new_username = os.getenv('username')
 new_password = os.getenv('password')
@@ -24,8 +16,6 @@ first_name = os.getenv('firstname')
 last_name = os.getenv('lastname')
 
 user_dn = f'cn={new_username},ou=Domain-Users,dc=buunk,dc=org'
-
-
 
 print("username:", new_username)
 print("firstname:", first_name)
