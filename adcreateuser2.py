@@ -1,23 +1,42 @@
-from pyad import pyad
-from pyad.aduser import ADUser
-from pyad.adcontainer import ADContainer
+from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
+import os
 
-pyad.set_defaults(ldap_server="192.168.2.14", username="BUUNK\\ldap-search", password=os.getenv('AD_SEARCH_PW'))
+server = Server('ldap://192.168.2.14', get_info=ALL)
+conn = Connection(server, user="BUUNK\\ldap-search", password=os.getenv('AD_SEARCH_PW'), authentication=NTLM)
 
-container = ADContainer.from_dn("ou=Domain-Users,dc=buunk,dc=org")
+if not conn.bind():
+    print('Bind mislukt:', conn.last_error)
+    exit(1)
+print('Bind succesvol')
 
-user = ADUser.create(
-    sam_account_name=os.getenv('sAMAccountName'),
-    container_object=container,
-    password="Welkom01",
-    optional_attributes={
-        'givenName': os.getenv('givenName'),
-        'sn': os.getenv('sn'),
-        'displayName': os.getenv('name'),
-        'userPrincipalName': os.getenv('userPrincipalName'),
-        'mail': os.getenv('mail'),
-        'telephoneNumber': os.getenv('telephoneNumber') or '',
-    }
-)
+dn = f"cn={os.getenv('cn')},ou=Domain-Users,dc=buunk,dc=org"
+attrs = {
+    'cn': os.getenv('cn'),
+    'givenName': os.getenv('givenName'),
+    'sn': os.getenv('sn'),
+    'displayName': os.getenv('name'),
+    'name': os.getenv('name'),
+    'userPrincipalName': os.getenv('userPrincipalName'),
+    'sAMAccountName': os.getenv('sAMAccountName'),
+    'mail': os.getenv('mail'),
+    'telephoneNumber': os.getenv('telephoneNumber') or ''
+}
 
-user.enable()
+conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], attrs)
+if conn.result['description'] != 'success':
+    print('Toevoegen mislukt:', conn.result)
+    conn.unbind()
+    exit(1)
+
+if not conn.extend.microsoft.modify_password(dn, "Welkom01"):
+    print('Wachtwoord zetten mislukt:', conn.result)
+    conn.unbind()
+    exit(1)
+
+if not conn.modify(dn, {'userAccountControl': [(MODIFY_REPLACE, [512])]}):
+    print('Account activeren mislukt:', conn.result)
+    conn.unbind()
+    exit(1)
+
+print('Gebruiker aangemaakt en geactiveerd')
+conn.unbind()
