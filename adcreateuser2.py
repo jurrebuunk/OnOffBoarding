@@ -1,7 +1,7 @@
 from ldap3 import Server, Connection, ALL, NTLM, MODIFY_REPLACE
 import os
 
-server = Server('ldaps://ws1.buunk.org' get_info=ALL, use_ssl=True)
+server = Server('ldaps://ws1.buunk.org', get_info=ALL, use_ssl=True)
 conn = Connection(server, user="BUUNK\\ldap-search", password=os.getenv('AD_SEARCH_PW'), authentication=NTLM)
 
 if not conn.bind():
