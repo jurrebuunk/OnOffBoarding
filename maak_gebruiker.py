@@ -10,10 +10,9 @@ def genereer_wachtwoord():
 server = Server('ldap://192.168.2.14', get_info=ALL)
 conn = Connection(server, user='BUUNK\\jurre', password='F+NywdK7f8;eC~tD', auto_bind=True)
 
-gebruikersnaam = input("Gebruikersnaam: ")
-voornaam = input("Voornaam: ")
-achternaam = input("Achternaam: ")
-groep = input("Groep: ")
+gebruikersnaam = "testdih"
+voornaam = "test"
+achternaam = "dih"
 
 wachtwoord = genereer_wachtwoord()
 dn = f"CN={gebruikersnaam},OU=Domain-Users,DC=buunk,DC=org"
@@ -31,9 +30,5 @@ conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], {
 
 conn.extend.microsoft.unlock_account(dn)
 conn.modify(dn, {'userAccountControl': [(MODIFY_REPLACE, [512])]})
-
-# Toevoegen aan groep
-groep_dn = f"CN={groep},OU=Security-Groups,DC=buunk,DC=org"
-conn.modify(groep_dn, {'member': [(MODIFY_REPLACE, [dn])]})
 
 print(f"Gebruiker {gebruikersnaam} is aangemaakt.")
