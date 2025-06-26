@@ -1,31 +1,104 @@
 import os
 import json
 import requests
+import sys
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
+import sv_ttk
+import ctypes
 
-# Create the main window
+# Dark mode title bar on Windows
+import pywinstyles
+
+def apply_theme_to_titlebar(root):
+    version = sys.getwindowsversion()
+    if version.major == 10 and version.build >= 22000:
+        pywinstyles.change_header_color(root, "#1c1c1c" if sv_ttk.get_theme() == "dark" else "#fafafa")
+    elif version.major == 10:
+        pywinstyles.apply_style(root, "dark" if sv_ttk.get_theme() == "dark" else "normal")
+        root.wm_attributes("-alpha", 0.99)
+        root.wm_attributes("-alpha", 1)
+
+# Scrollable Frame class with ttk
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = tk.Canvas(self, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Mousewheel support
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+# Main window setup
 root = tk.Tk()
 root.title("New Object - User")
 root.geometry("435x410")
-root.resizable(False, False)
+root.minsize(435, 410)
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
 
-# Create a frame to hold all the widgets
-frame = tk.Frame(root)
-frame.pack(fill=tk.BOTH, expand=True)
-frame.pack_propagate(False)
+def is_windows_dark_mode():
+    try:
+        # Open Windows Registry key voor AppsUseLightTheme (0 = donker, 1 = licht)
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                             r'SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize')
+        value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
+        winreg.CloseKey(key)
+        return value == 0  # 0 betekent donker thema
+    except Exception:
+        # Fallback: licht thema
+        return False
 
+if is_windows_dark_mode():
+    sv_ttk.set_theme("dark")
+else:
+    sv_ttk.set_theme("light")
 
-# Variables for syncing
+# Apply dark title bar on Windows
+apply_theme_to_titlebar(root)
+
+# Style for removing focus outline and matching background color
+style = ttk.Style()
+bg_color = style.lookup("TFrame", "background")
+style.configure("NoFocus.TButton",
+                background=bg_color,
+                borderwidth=0)
+style.map("NoFocus.TButton",
+          focuscolor=[('pressed', '')],
+          highlightcolor=[('pressed', '')])
+
+# Create scrollable frame as main container
+main_frame = ScrollableFrame(root)
+main_frame.grid(sticky="nsew")
+
+frame = main_frame.scrollable_frame
+frame.columnconfigure(1, weight=1)
+frame.columnconfigure(2, weight=1)
+frame.columnconfigure(3, weight=1)
+
+# Variables
 user_var = tk.StringVar()
 first_var = tk.StringVar()
 last_var = tk.StringVar()
 init_var = tk.StringVar()
 
-
-# Load image for the icon (64x64), with fallback if not found
+# Load user icon
 icon_path = "user_icon.png"
 if os.path.exists(icon_path):
     user_img = Image.open(icon_path).resize((48, 48))
@@ -55,39 +128,35 @@ def change_profile_picture():
         except Exception as e:
             print("Error loading image:", e)
 
-# Image button (icon left of "Create in")
-icon_button = tk.Button(frame, image=user_photo, relief='flat', borderwidth=0, command=change_profile_picture, width=48, height=48)
+icon_button = ttk.Button(frame, image=user_photo, command=change_profile_picture)
 icon_button.grid(row=0, column=0, sticky=tk.NW, padx=(25, 10), pady=10)
+icon_button.configure(width=48)
 
-# "Create in" label next to the image
-create_label = tk.Label(frame, text="Create in: buunk.org/Domain-Users")
+# Labels and inputs
+create_label = ttk.Label(frame, text="Create in: buunk.org/Domain-Users")
 create_label.grid(row=0, column=1, columnspan=3, sticky=tk.W, padx=0, pady=5)
 
-# Horizontal line separator under image and label
 sep1 = ttk.Separator(frame, orient='horizontal')
 sep1.grid(row=1, column=0, columnspan=4, sticky='ew', padx=10, pady=0)
 
-# First name and Initials
-label_fn = tk.Label(frame, text="First name:")
+label_fn = ttk.Label(frame, text="First name:")
 label_fn.grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
-entry_fn = tk.Entry(frame, textvariable=first_var)
+entry_fn = ttk.Entry(frame, textvariable=first_var)
 entry_fn.grid(row=2, column=1, padx=10, pady=5)
 
-label_init = tk.Label(frame, text="Initials:")
+label_init = ttk.Label(frame, text="Initials:")
 label_init.grid(row=2, column=2, sticky=tk.W, padx=10, pady=5)
-entry_init = tk.Entry(frame, textvariable=init_var)
+entry_init = ttk.Entry(frame, textvariable=init_var)
 entry_init.grid(row=2, column=3, padx=10, pady=5)
 
-# Last name
-label_ln = tk.Label(frame, text="Last name:")
+label_ln = ttk.Label(frame, text="Last name:")
 label_ln.grid(row=3, column=0, sticky=tk.W, padx=10, pady=5)
-entry_ln = tk.Entry(frame, textvariable=last_var)
+entry_ln = ttk.Entry(frame, textvariable=last_var)
 entry_ln.grid(row=3, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
 
-# Full name
-label_full = tk.Label(frame, text="Full name:")
+label_full = ttk.Label(frame, text="Full name:")
 label_full.grid(row=4, column=0, sticky=tk.W, padx=10, pady=5)
-entry_full = tk.Entry(frame)
+entry_full = ttk.Entry(frame)
 entry_full.grid(row=4, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
 
 def update_full_name(*args):
@@ -107,36 +176,31 @@ first_var.trace_add('write', update_full_name)
 last_var.trace_add('write', update_full_name)
 init_var.trace_add('write', update_full_name)
 
-# E-mail
-label_email = tk.Label(frame, text="E-mail:")
+label_email = ttk.Label(frame, text="E-mail:")
 label_email.grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
-entry_email = tk.Entry(frame)
+entry_email = ttk.Entry(frame)
 entry_email.grid(row=5, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
 
-# Telephone number
-label_phone = tk.Label(frame, text="Telephone:")
+label_phone = ttk.Label(frame, text="Telephone:")
 label_phone.grid(row=6, column=0, sticky=tk.W, padx=10, pady=5)
-entry_phone = tk.Entry(frame)
+entry_phone = ttk.Entry(frame)
 entry_phone.grid(row=6, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
 
-# User logon name
-label_un = tk.Label(frame, text="User logon name:")
+label_un = ttk.Label(frame, text="User logon name:")
 label_un.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=10, pady=(5, 0))
-entry_un = tk.Entry(frame, textvariable=user_var)
+entry_un = ttk.Entry(frame, textvariable=user_var)
 entry_un.grid(row=8, column=0, columnspan=2, sticky=tk.EW, padx=(10, 5), pady=5)
-combo_domain = ttk.Combobox(frame, values=["@buunk.org"])
+combo_domain = ttk.Combobox(frame, values=["@buunk.org"], state="readonly")
 combo_domain.current(0)
 combo_domain.grid(row=8, column=2, columnspan=2, sticky=tk.EW, padx=(5, 10), pady=5)
 
-# Pre-Windows 2000 logon name
-label_pre = tk.Label(frame, text="User logon name (pre-Windows 2000):")
+label_pre = ttk.Label(frame, text="User logon name (pre-Windows 2000):")
 label_pre.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=10, pady=(5, 0))
-entry_pre_ro = tk.Entry(frame, state='readonly', readonlybackground='#f0f0f0')
+entry_pre_ro = ttk.Entry(frame, state='readonly')
 entry_pre_ro.grid(row=10, column=0, columnspan=2, sticky=tk.EW, padx=(10, 5), pady=5)
-entry_pre = tk.Entry(frame, textvariable=user_var)
+entry_pre = ttk.Entry(frame, textvariable=user_var)
 entry_pre.grid(row=10, column=2, columnspan=2, sticky=tk.EW, padx=(5, 10), pady=5)
 
-# Horizontal line separator above buttons
 sep2 = ttk.Separator(frame, orient='horizontal')
 sep2.grid(row=11, column=0, columnspan=4, sticky='ew', padx=10, pady=5)
 
@@ -198,13 +262,11 @@ def print_ad_user_data():
     print(f"Task Trigger Status: {task_response.status_code}")
     print(f"Task Response: {task_response.text}")
 
-
-# Buttons aligned to bottom right
-button_frame = tk.Frame(frame)
+button_frame = ttk.Frame(frame)
 button_frame.grid(row=12, column=0, columnspan=4, sticky=tk.E, padx=10, pady=10)
-btn_add = tk.Button(button_frame, text="Add User", command=print_ad_user_data)
+btn_add = ttk.Button(button_frame, text="Add User", command=print_ad_user_data)
 btn_add.pack(side=tk.LEFT, padx=5)
-btn_cancel = tk.Button(button_frame, text="Cancel", command=root.destroy)
+btn_cancel = ttk.Button(button_frame, text="Cancel", command=root.destroy)
 btn_cancel.pack(side=tk.LEFT, padx=5)
 
 def update_email(*args):
@@ -216,19 +278,8 @@ def update_email(*args):
         entry_email.delete(0, tk.END)
         entry_email.insert(0, email)
 
-first_var.trace_add('write', update_email)
-last_var.trace_add('write', update_email)
+first_var.trace_add("write", update_email)
+last_var.trace_add("write", update_email)
 combo_domain.bind("<<ComboboxSelected>>", lambda e: update_email())
 
-def update_username(*args):
-    first = first_var.get().strip().lower()
-    last = last_var.get().strip().lower()
-    if first and last:
-        username = f"{first}{last}"
-        user_var.set(username)
-
-first_var.trace_add('write', update_username)
-last_var.trace_add('write', update_username)
-
-# Run the application
 root.mainloop()
