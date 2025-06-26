@@ -45,10 +45,10 @@ for entry in conn.entries:
     mail = entry.mail.value if 'mail' in entry else "n/a"
     print(f"CN: {cn}, SAM: {sam}, Mail: {mail}")
     if 'memberOf' in entry:
-    	groepen = [g.split(',')[0].replace("CN=", "") for g in entry.memberOf]
+        groepen = [g.split(',')[0].replace("CN=", "") for g in entry.memberOf]
     	print("---------------")
    	for groep in groepen:
-        	print(groep)
+            print(groep)
     	print("---------------")
     else:
     	print("  Groepen: geen")
