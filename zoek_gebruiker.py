@@ -16,7 +16,11 @@ conn = Connection(server, user=os.environ["LDAP_USER"], password=os.environ["LDA
 print(f"[INFO] Verbonden met {server.host}.")
 
 base_dn = "DC=buunk,DC=org"
-search_filter = "(objectClass=user)"
+search_user = os.getenv("search")
+if not search_user:
+    print("[ERROR] Omgevingsvariabele 'search' is niet gezet.")
+    sys.exit(1)
+search_filter = f"(&(objectClass=user)(sAMAccountName={search_user}))"
 
 conn.search(base_dn, search_filter, search_scope=SUBTREE, attributes=['cn', 'sAMAccountName', 'mail', 'memberOf'])
 
