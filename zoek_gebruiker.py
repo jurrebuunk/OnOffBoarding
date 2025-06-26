@@ -36,14 +36,23 @@ search_filter = (
     ")"
 )
 
-conn.search(base_dn, search_filter, search_scope=SUBTREE, attributes=['cn', 'sAMAccountName', 'mail', 'memberOf'])
+conn.search(
+    base_dn,
+    search_filter,
+    search_scope=SUBTREE,
+    attributes=['cn', 'sAMAccountName', 'mail', 'memberOf', 'userAccountControl']
+)
 
 print("[INFO] Resultaten:")
 for entry in conn.entries:
     cn = entry.cn.value
     sam = entry.sAMAccountName.value
     mail = entry.mail.value if 'mail' in entry else "n/a"
-    print(f"CN: {cn}, SAM: {sam}, Mail: {mail}")
+    uac = int(entry.userAccountControl.value)
+    enabled = not (uac & 0x2)  # 0x2 = ACCOUNTDISABLE
+    status = "Ingeschakeld" if enabled else "Uitgeschakeld"
+
+    print(f"CN: {cn}, SAM: {sam}, Mail: {mail}, Status: {status}")
     if 'memberOf' in entry:
         groepen = [g.split(',')[0].replace("CN=", "") for g in entry.memberOf]
         print("---------------")
