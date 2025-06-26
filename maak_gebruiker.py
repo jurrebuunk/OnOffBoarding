@@ -1,10 +1,19 @@
 from ldap3 import Server, Connection, ALL, MODIFY_REPLACE
+import os
 import sys
 
-# LDAP verbinding
+# Haal LDAP-config uit omgevingsvariabelen
+ldap_host = os.environ.get("LDAP_HOST")
+ldap_user = os.environ.get("LDAP_USER")
+ldap_password = os.environ.get("LDAP_PASS")
+
+if not ldap_host or not ldap_user or not ldap_password:
+    print("[ERROR] Vereiste LDAP omgeving variabelen ontbreken (LDAP_HOST, LDAP_USER, LDAP_PASS).")
+    sys.exit(1)
+
 print("[INFO] Verbinden met domain controller...")
-server = Server('ldap://192.168.2.14', get_info=ALL)
-conn = Connection(server, user='BUUNK\\jurre', password='F+NywdK7f8;eC~tD', auto_bind=True)
+server = Server(ldap_host, get_info=ALL)
+conn = Connection(server, user=ldap_user, password=ldap_password, auto_bind=True)
 print(f"[INFO] Verbonden met {server.host}.")
 
 gebruikersnaam = "testdihhh"
@@ -18,7 +27,7 @@ print(f"[DEBUG] DN: {dn}")
 print(f"[DEBUG] Voornaam: {voornaam}, Achternaam: {achternaam}")
 print(f"[DEBUG] UserPrincipalName: {gebruikersnaam}@buunk.org")
 
-# Gebruiker toevoegen zonder wachtwoord
+# Gebruiker toevoegen zonder wachtwoord, account disabled
 result = conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], {
     'cn': gebruikersnaam,
     'givenName': voornaam,
@@ -26,7 +35,7 @@ result = conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], {
     'displayName': f"{voornaam} {achternaam}",
     'userPrincipalName': f"{gebruikersnaam}@buunk.org",
     'sAMAccountName': gebruikersnaam,
-    'userAccountControl': 544  # Account disabled + PASSWD_NOTREQD
+    'userAccountControl': 544  # Disabled + password not required
 })
 
 if result:
@@ -44,7 +53,7 @@ except Exception as e:
     print(f"[ERROR] Ontgrendelen mislukt: {e}")
     sys.exit(1)
 
-# UserAccountControl opnieuw instellen op 512
+# UserAccountControl opnieuw instellen op 512 (enabled)
 print("[INFO] UserAccountControl opnieuw instellen op 512...")
 mod_result = conn.modify(dn, {'userAccountControl': [(MODIFY_REPLACE, [512])]})
 if mod_result:
