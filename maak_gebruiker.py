@@ -25,19 +25,26 @@ dn = f"CN={os.environ['cn']},OU=Domain-Users,DC=buunk,DC=org"
 print(f"[INFO] Aanmaken van gebruiker: {os.environ['cn']}")
 print(f"[DEBUG] DN: {dn}")
 
-# Toevoegen gebruiker
-result = conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], {
+# Basis attributen
+attributes = {
     'cn': os.environ['cn'],
     'givenName': os.environ['givenName'],
     'sn': os.environ['sn'],
-    'initials': os.environ['initials'],
     'name': os.environ['name'],
     'userPrincipalName': os.environ['userPrincipalName'],
     'sAMAccountName': os.environ['sAMAccountName'],
-    'mail': os.environ['mail'],
-    'telephoneNumber': os.environ['telephoneNumber'],
     'userAccountControl': 544
-})
+}
+
+# Optionele attributen alleen toevoegen als ze bestaan en niet leeg zijn
+optional_attrs = ['initials', 'mail', 'telephoneNumber']
+for attr in optional_attrs:
+    val = os.getenv(attr)
+    if val:
+        attributes[attr] = val
+
+# Toevoegen gebruiker
+result = conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], attributes)
 
 if result:
     print("[SUCCESS] Gebruiker succesvol toegevoegd.")
