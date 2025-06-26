@@ -20,7 +20,21 @@ search_user = os.getenv("search")
 if not search_user:
     print("[ERROR] Omgevingsvariabele 'search' is niet gezet.")
     sys.exit(1)
-search_filter = f"(&(objectClass=user)(sAMAccountName={search_user}))"
+
+print(f"[INFO] Gezocht wordt op: {search_user}")
+
+# Filter zoekt op sAMAccountName, cn (full name), givenName (voornaam), sn (achternaam)
+search_filter = (
+    "(&"
+    "(objectClass=user)"
+    "(|"
+    f"(sAMAccountName={search_user})"
+    f"(cn={search_user})"
+    f"(givenName={search_user})"
+    f"(sn={search_user})"
+    ")"
+    ")"
+)
 
 conn.search(base_dn, search_filter, search_scope=SUBTREE, attributes=['cn', 'sAMAccountName', 'mail', 'memberOf'])
 
