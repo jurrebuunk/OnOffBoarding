@@ -5,8 +5,8 @@ import sys
 # Vereiste LDAP-omgevingvariabelen
 required_env = [
     "LDAP_HOST", "LDAP_USER", "LDAP_PASS",
-    "cn", "givenName", "sn", "initials", "name",
-    "userPrincipalName", "sAMAccountName", "mail", "telephoneNumber"
+    "cn", "givenName", "sn", "name",
+    "userPrincipalName", "sAMAccountName"
 ]
 
 missing = [var for var in required_env if not os.getenv(var)]
