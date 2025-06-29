@@ -66,11 +66,10 @@ os.environ["userPrincipalName"] = f"{candidate}@buunk.org"
 print_info(f"Gegenereerde gebruikersnaam: {candidate}")
 
 
-
+# also check cn exist godverdomme
 base_cn = f"{os.environ['givenName']} {os.environ['sn']}"
 cn = base_cn
 i = 2
-
 while True:
     conn.search("OU=Domain-Users,DC=buunk,DC=org", f"(cn={cn})", attributes=["cn"])
     if not conn.entries:
@@ -106,7 +105,7 @@ else:
     print_error(f"Fout bij toevoegen gebruiker: {conn.result}")
     sys.exit(1)
 
-# SSH: wachtwoord instellen en gebruiker activeren
+# ssh wachtwoord instellen en gebruiker activeren
 print_info("Verwerken van wachtwoord en activatie via SSH...")
 
 ssh_host = os.environ["LDAP_HOST"]

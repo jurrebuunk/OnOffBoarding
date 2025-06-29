@@ -2,6 +2,8 @@
 
 Automate Active Directory user management tasks with local scripts or via Semaphore API integration.
 
+![Alt text](lib/preview.png)
+
 ## Features
 
 - Create AD users  
