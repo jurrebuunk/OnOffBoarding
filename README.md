@@ -16,15 +16,6 @@ Automate Active Directory user management tasks with local scripts or via Semaph
 
 ## Usage
 
-> ⚠️ **Let op**
->
-> Deze tool verwacht dat de volgende Organizational Units (OU's) bestaan in je Active Directory-structuur:
-> - `Domain-Users`
-> - `Security-Groups`
-> - `Disabled-Users`
->
-> Deze OU-namen zijn op dit moment **hardcoded** in de scripts. Zorg ervoor dat deze exact zo bestaan in je AD-omgeving, anders zullen bepaalde functies niet correct werken.
-
 ```bash
 python oob.py <command> [-a [config.json]]
 ```
@@ -48,6 +39,17 @@ python oob.py create_user -a api.json
 If no config file is provided, defaults to `api.json`.
 
 ## Configuration
+
+
+> ⚠️ **Let op**
+>
+> Deze tool verwacht dat de volgende Organizational Units (OU's) bestaan in je Active Directory-structuur:
+> - `Domain-Users`
+> - `Security-Groups`
+> - `Disabled-Users`
+>
+> Deze OU-namen zijn op dit moment **hardcoded** in de scripts. Zorg ervoor dat deze exact zo bestaan in je AD-omgeving, anders zullen bepaalde functies niet correct werken.
+
 
 ### API config (`api.json`)
 
