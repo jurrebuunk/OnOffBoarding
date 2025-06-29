@@ -1,285 +1,262 @@
 import os
-import json
-import requests
 import sys
-import tkinter as tk
-from tkinter import ttk, filedialog
-from PIL import Image, ImageTk
-import sv_ttk
-import ctypes
+import json
+import argparse
+import requests
+from colorama import init, Fore, Style
 
-# Dark mode title bar on Windows
-import pywinstyles
+init(autoreset=True)
 
-def apply_theme_to_titlebar(root):
-    version = sys.getwindowsversion()
-    if version.major == 10 and version.build >= 22000:
-        pywinstyles.change_header_color(root, "#1c1c1c" if sv_ttk.get_theme() == "dark" else "#fafafa")
-    elif version.major == 10:
-        pywinstyles.apply_style(root, "dark" if sv_ttk.get_theme() == "dark" else "normal")
-        root.wm_attributes("-alpha", 0.99)
-        root.wm_attributes("-alpha", 1)
+api_config = None
 
-# Scrollable Frame class with ttk
-class ScrollableFrame(ttk.Frame):
-    def __init__(self, container, *args, **kwargs):
-        super().__init__(container, *args, **kwargs)
-        canvas = tk.Canvas(self, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
-        self.scrollable_frame = ttk.Frame(canvas)
+def print_info(msg):
+    print(f"{Fore.GREEN}[INFO]{Style.RESET_ALL} {msg}")
 
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+def print_error(msg):
+    print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {msg}")
 
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+def get_fields_input(fields):
+    values = {}
+    i = 0
+    while i < len(fields):
+        field = fields[i]
+        value = input(f"{field}: ")
+        if value.lower() == "back":
+            if i > 0:
+                i -= 1
+            else:
+                print_info("Already at the first field.")
+            continue
+        values[field] = value
+        i += 1
+    return values
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+def set_env_vars(vargroup_id, groupname, env_vars):
+    if not api_config:
+        print_error("Geen API-config geladen.")
+        sys.exit(1)
 
-        # Mousewheel support
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-# Main window setup
-root = tk.Tk()
-root.title("New Object - User")
-root.geometry("435x410")
-root.minsize(435, 410)
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
-
-def is_windows_dark_mode():
     try:
-        # Open Windows Registry key voor AppsUseLightTheme (0 = donker, 1 = licht)
-        import winreg
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                             r'SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize')
-        value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
-        winreg.CloseKey(key)
-        return value == 0  # 0 betekent donker thema
-    except Exception:
-        # Fallback: licht thema
-        return False
+        url = f"{api_config['url'].rstrip('/')}/api/project/1/environment/{vargroup_id}"
+        headers = {
+            "Authorization": f"Bearer {api_config['key']}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        payload = {
+            "id": vargroup_id,
+            "name": groupname,
+            "project_id": 1,
+            "password": "string",
+            "json": "{}",
+            "env": json.dumps(env_vars),
+            "secrets": []
+        }
+        r = requests.put(url, headers=headers, json=payload)
+        if r.status_code in [200, 204]:
+            print_info(f"API env-variabelen ingesteld voor groep '{groupname}'.")
+        else:
+            print_error(f"API fout bij instellen vars: {r.status_code} - {r.text}")
+    except Exception as e:
+        print_error(f"API env-update gefaald: {e}")
+        sys.exit(1)
 
-if is_windows_dark_mode():
-    sv_ttk.set_theme("dark")
-else:
-    sv_ttk.set_theme("light")
+def start_task(template_id):
+    if not api_config:
+        print_error("Geen API-config geladen.")
+        sys.exit(1)
 
-# Apply dark title bar on Windows
-apply_theme_to_titlebar(root)
+    try:
+        url = f"{api_config['url'].rstrip('/')}/api/project/1/tasks"
+        headers = {
+            "Authorization": f"Bearer {api_config['key']}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        r = requests.post(url, headers=headers, json={"template_id": int(template_id)})
+        if r.status_code == 201:
+            task_id = r.json().get("id")
+            if task_id:
+                print_info(f"API taak gestart met ID {task_id}.")
+                print("Bezoek de volgende link om de resultaten te zien:")
+                print(f"https://semaphore.buunk.org/project/1/templates/{template_id}/tasks?t={task_id}")
+            else:
+                print_info("API taak gestart, maar task ID kon niet worden opgehaald.")
+        else:
+            print_error(f"API fout bij starten taak: {r.status_code} - {r.text}")
+    except Exception as e:
+        print_error(f"API taak-start gefaald: {e}")
+        sys.exit(1)
 
-# Style for removing focus outline and matching background color
-style = ttk.Style()
-bg_color = style.lookup("TFrame", "background")
-style.configure("NoFocus.TButton",
-                background=bg_color,
-                borderwidth=0)
-style.map("NoFocus.TButton",
-          focuscolor=[('pressed', '')],
-          highlightcolor=[('pressed', '')])
+def confr(value):
+    try:
+        with open("oobconf.json", "r") as f:
+            conf = json.load(f)
+        return conf.get(value, "")
+    except Exception as e:
+        print_error(f"Laden van oobconf.json mislukt: {e}")
+        sys.exit(1)
 
-# Create scrollable frame as main container
-main_frame = ScrollableFrame(root)
-main_frame.grid(sticky="nsew")
+def create_user():
+    input_fields = [
+        "cn", "givenName", "sn", "name",
+        "userPrincipalName", "sAMAccountName", "userPassword"
+    ]
 
-frame = main_frame.scrollable_frame
-frame.columnconfigure(1, weight=1)
-frame.columnconfigure(2, weight=1)
-frame.columnconfigure(3, weight=1)
-
-# Variables
-user_var = tk.StringVar()
-first_var = tk.StringVar()
-last_var = tk.StringVar()
-init_var = tk.StringVar()
-
-# Load user icon
-icon_path = "lib\\user_icon.png"
-if os.path.exists(icon_path):
-    user_img = Image.open(icon_path).resize((48, 48))
-    user_photo = ImageTk.PhotoImage(user_img)
-else:
-    user_photo = None
-
-def change_profile_picture():
-    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.ico")])
-    if file_path:
-        try:
-            img = Image.open(file_path).convert("RGB")
-            w, h = img.size
-            min_dim = min(w, h)
-            left = (w - min_dim) // 2
-            top = (h - min_dim) // 2
-            right = left + min_dim
-            bottom = top + min_dim
-            cropped = img.crop((left, top, right, bottom)).resize((96, 96))
-
-            cropped.save("lib\\profile_temp.jpg", format="JPEG")
-
-            display_img = cropped.resize((48, 48), Image.LANCZOS)
-            new_photo = ImageTk.PhotoImage(display_img)
-            icon_button.config(image=new_photo)
-            icon_button.image = new_photo
-        except Exception as e:
-            print("Error loading image:", e)
-
-icon_button = ttk.Button(frame, image=user_photo, command=change_profile_picture)
-icon_button.grid(row=0, column=0, sticky=tk.NW, padx=(25, 10), pady=10)
-icon_button.configure(width=48)
-
-# Labels and inputs
-create_label = ttk.Label(frame, text="Create in: buunk.org/Domain-Users")
-create_label.grid(row=0, column=1, columnspan=3, sticky=tk.W, padx=0, pady=5)
-
-sep1 = ttk.Separator(frame, orient='horizontal')
-sep1.grid(row=1, column=0, columnspan=4, sticky='ew', padx=10, pady=0)
-
-label_fn = ttk.Label(frame, text="First name:")
-label_fn.grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
-entry_fn = ttk.Entry(frame, textvariable=first_var)
-entry_fn.grid(row=2, column=1, padx=10, pady=5)
-
-label_init = ttk.Label(frame, text="Initials:")
-label_init.grid(row=2, column=2, sticky=tk.W, padx=10, pady=5)
-entry_init = ttk.Entry(frame, textvariable=init_var)
-entry_init.grid(row=2, column=3, padx=10, pady=5)
-
-label_ln = ttk.Label(frame, text="Last name:")
-label_ln.grid(row=3, column=0, sticky=tk.W, padx=10, pady=5)
-entry_ln = ttk.Entry(frame, textvariable=last_var)
-entry_ln.grid(row=3, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
-
-label_full = ttk.Label(frame, text="Full name:")
-label_full.grid(row=4, column=0, sticky=tk.W, padx=10, pady=5)
-entry_full = ttk.Entry(frame)
-entry_full.grid(row=4, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
-
-def update_full_name(*args):
-    current_full = entry_full.get()
-    initial = init_var.get().strip()
-    init_part = (initial + ".") if initial else ""
-    parts = [first_var.get().strip()]
-    if init_part:
-        parts.append(init_part)
-    parts.append(last_var.get().strip())
-    combined = " ".join(p for p in parts if p)
-    if combined != current_full:
-        entry_full.delete(0, tk.END)
-        entry_full.insert(0, combined)
-
-first_var.trace_add('write', update_full_name)
-last_var.trace_add('write', update_full_name)
-init_var.trace_add('write', update_full_name)
-
-label_email = ttk.Label(frame, text="E-mail:")
-label_email.grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
-entry_email = ttk.Entry(frame)
-entry_email.grid(row=5, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
-
-label_phone = ttk.Label(frame, text="Telephone:")
-label_phone.grid(row=6, column=0, sticky=tk.W, padx=10, pady=5)
-entry_phone = ttk.Entry(frame)
-entry_phone.grid(row=6, column=1, columnspan=3, sticky=tk.EW, padx=10, pady=5)
-
-label_un = ttk.Label(frame, text="User logon name:")
-label_un.grid(row=7, column=0, columnspan=4, sticky=tk.W, padx=10, pady=(5, 0))
-entry_un = ttk.Entry(frame, textvariable=user_var)
-entry_un.grid(row=8, column=0, columnspan=2, sticky=tk.EW, padx=(10, 5), pady=5)
-combo_domain = ttk.Combobox(frame, values=["@buunk.org"], state="readonly")
-combo_domain.current(0)
-combo_domain.grid(row=8, column=2, columnspan=2, sticky=tk.EW, padx=(5, 10), pady=5)
-
-label_pre = ttk.Label(frame, text="User logon name (pre-Windows 2000):")
-label_pre.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=10, pady=(5, 0))
-entry_pre_ro = ttk.Entry(frame, state='readonly')
-entry_pre_ro.grid(row=10, column=0, columnspan=2, sticky=tk.EW, padx=(10, 5), pady=5)
-entry_pre = ttk.Entry(frame, textvariable=user_var)
-entry_pre.grid(row=10, column=2, columnspan=2, sticky=tk.EW, padx=(5, 10), pady=5)
-
-sep2 = ttk.Separator(frame, orient='horizontal')
-sep2.grid(row=11, column=0, columnspan=4, sticky='ew', padx=10, pady=5)
-
-def print_ad_user_data():
-    domain = combo_domain.get().lstrip("@")
-    username = user_var.get().strip()
-    first_name = first_var.get().strip()
-    last_name = last_var.get().strip()
-    initials = init_var.get().strip()
-    full_name = entry_full.get().strip()
-    email = entry_email.get().strip()
-    phone = entry_phone.get().strip()
-
-    env_vars = {
-        "cn": full_name,
-        "givenName": first_name,
-        "sn": last_name,
-        "initials": initials,
-        "name": full_name,
-        "userPrincipalName": f"{username}@{domain}",
-        "sAMAccountName": username,
-        "mail": email,
-        "telephoneNumber": phone
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
     }
 
-    url = "https://semaphore.buunk.org/api/project/1/environment/4"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer wiguvkryyipv7javuxkz9qfstckt7pvfvfywrvo9qww="
+    user_data = get_fields_input(input_fields)
+
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=4, groupname="maak_gebruiker_var", env_vars=user_data)
+        start_task(template_id=3)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/maak_gebruiker.py")
+        print_info("Lokaal uitgevoerd.")
+
+def zoek_gebruiker():
+    input_fields = [
+        "search"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
     }
-    payload = {
-        "id": 4,
-        "name": "Create AD User",
-        "project_id": 1,
-        "password": "string",
-        "json": "{}",
-        "env": json.dumps(env_vars),
-        "secrets": [
-            {
-                "id": 0,
-                "type": "env",
-                "name": "AD_SEARCH_PW",
-                "secret": "DRPpgbzxr2CS6XMqYBZv",
-                "operation": "create"
-            }
-        ]
+
+    user_data = get_fields_input(input_fields)
+
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=5, groupname="zoek_gebruiker_var", env_vars=user_data)
+        start_task(template_id=3)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/zoek_gebruiker.py")
+        print_info("Lokaal uitgevoerd.")
+
+def voeg_gebruiker_aan_groep():
+    input_fields = [
+        "username",
+        "group"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
     }
 
-    response = requests.put(url, headers=headers, data=json.dumps(payload))
-    print(f"Env Update Status: {response.status_code}")
+    user_data = get_fields_input(input_fields)
 
-    # Start task
-    task_url = "https://semaphore.buunk.org/api/project/1/tasks"
-    task_payload = {
-        "template_id": 2
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=6, groupname="voeg_gebruiker_aan_groep_var", env_vars=user_data)
+        start_task(template_id=5)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/voeg_gebruiker_aan_groep.py")
+        print_info("Lokaal uitgevoerd.")
+
+def copy_gebruiker_groepen():
+    input_fields = [
+        "vangebruiker",
+        "naargebruiker"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
     }
-    task_response = requests.post(task_url, headers=headers, data=json.dumps(task_payload))
-    print(f"Task Trigger Status: {task_response.status_code}")
-    print(f"Task Response: {task_response.text}")
 
-button_frame = ttk.Frame(frame)
-button_frame.grid(row=12, column=0, columnspan=4, sticky=tk.E, padx=10, pady=10)
-btn_add = ttk.Button(button_frame, text="Add User", command=print_ad_user_data)
-btn_add.pack(side=tk.LEFT, padx=5)
-btn_cancel = ttk.Button(button_frame, text="Cancel", command=root.destroy)
-btn_cancel.pack(side=tk.LEFT, padx=5)
+    user_data = get_fields_input(input_fields)
 
-def update_email(*args):
-    first = first_var.get().strip().lower()
-    last = last_var.get().strip().lower()
-    domain = combo_domain.get().lstrip("@")
-    if first and last and domain:
-        email = f"{first}.{last}@{domain}"
-        entry_email.delete(0, tk.END)
-        entry_email.insert(0, email)
+    # Vraag naar sync
+    sync = input("Exacte kopie (true/false, standaard=false)? ")
+    user_data["sync"] = "true" if sync == "true" else "false"
 
-first_var.trace_add("write", update_email)
-last_var.trace_add("write", update_email)
-combo_domain.bind("<<ComboboxSelected>>", lambda e: update_email())
+    for key, value in static_fields.items():
+        user_data[key] = value
 
-root.mainloop()
+    if api_config:
+        set_env_vars(vargroup_id=7, groupname="copy_gebruiker_groepen_var", env_vars=user_data)
+        start_task(template_id=6)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/copy_gebruiker_groepen.py")
+        print_info("Lokaal uitgevoerd.")
+
+def disable_gebruiker():
+    input_fields = [
+        "username"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
+    }
+
+    user_data = get_fields_input(input_fields)
+
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=8, groupname="disable_gebruiker_var", env_vars=user_data)
+        start_task(template_id=7)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/disable_gebruiker.py")
+        print_info("Lokaal uitgevoerd.")
+
+commands = {
+    "maak_gebruiker": create_user,
+    "zoek_gebruiker": zoek_gebruiker,
+    "voeg_gebruiker_aan_groep": voeg_gebruiker_aan_groep,
+    "copy_gebruiker_groepen": copy_gebruiker_groepen,
+    "disable_gebruiker": disable_gebruiker,
+}
+
+def load_api_config(path="api.json"):
+    global api_config
+    try:
+        with open(path, 'r') as f:
+            api_config = json.load(f)
+    except Exception as e:
+        print_error(f"API-config laden gefaald: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", help="Command to run", choices=commands.keys())
+    parser.add_argument("-a", "--api", nargs='?', const="api.json", help="Pad naar API-config JSON (optioneel, standaard: api.json)")
+    args = parser.parse_args()
+
+    if args.api:
+        load_api_config(args.api)
+
+    func = commands.get(args.command)
+    if func:
+        func()
+    else:
+        print_error(f"Unknown command: {args.command}")
