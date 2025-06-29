@@ -188,6 +188,10 @@ def copy_gebruiker_groepen():
 
     user_data = get_fields_input(input_fields)
 
+    # Vraag naar sync
+    sync = input("Exacte kopie (true/false, standaard=false)? ")
+    user_data["sync"] = "true" if sync == "true" else "false"
+
     for key, value in static_fields.items():
         user_data[key] = value
 
