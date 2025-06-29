@@ -98,10 +98,7 @@ def confr(value):
         sys.exit(1)
 
 def create_user():
-    input_fields = [
-        "cn", "givenName", "sn", "name",
-        "userPrincipalName", "sAMAccountName", "userPassword"
-    ]
+    input_fields = ["givenName", "sn"]
 
     static_fields = {
         "LDAP_HOST": confr("LDAP_HOST"),
@@ -110,6 +107,10 @@ def create_user():
     }
 
     user_data = get_fields_input(input_fields)
+
+    user_data["initials"] = input("initials (Optioneel): ")
+    user_data["mail"] = input("mail (Optioneel): ")
+    user_data["telephoneNumber"] = input("telephoneNumber (Optioneel): ")
 
     for key, value in static_fields.items():
         user_data[key] = value
