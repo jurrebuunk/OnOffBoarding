@@ -1,4 +1,3 @@
-````markdown
 # OnOffBoarding
 
 Automate Active Directory user management tasks with local scripts or via Semaphore API integration.
@@ -17,7 +16,7 @@ Automate Active Directory user management tasks with local scripts or via Semaph
 
 ```bash
 python oob.py <command> [-a [config.json]]
-````
+```
 
 ### Commands
 
