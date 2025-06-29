@@ -45,7 +45,7 @@ If no config file is provided, defaults to `api.json`.
 >
 > Deze tool verwacht dat de volgende Organizational Units (OU's) bestaan in je Active Directory-structuur:
 > - `Domain-Users`
-> - `Security-Groups`
+> - `Security-groups`
 > - `Disabled-Users`
 >
 > Deze OU-namen zijn op dit moment **hardcoded** in de scripts. Zorg ervoor dat deze exact zo bestaan in je AD-omgeving, anders zullen bepaalde functies niet correct werken.
