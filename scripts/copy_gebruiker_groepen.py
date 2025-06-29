@@ -1,17 +1,26 @@
 from ldap3 import Server, Connection, ALL, MODIFY_ADD, MODIFY_DELETE
 import os
 import sys
+from colorama import init, Fore, Style
+
+init(autoreset=True)
+
+def print_info(msg):
+    print(f"{Fore.GREEN}[INFO]{Style.RESET_ALL} {msg}")
+
+def print_error(msg):
+    print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {msg}")
 
 required_env = ["LDAP_HOST", "LDAP_USER", "LDAP_PASS", "vangebruiker", "naargebruiker", "sync"]
 missing = [var for var in required_env if not os.getenv(var)]
 if missing:
-    print(f"[ERROR] Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
+    print_error(f"Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
     sys.exit(1)
 
-print("[INFO] Verbinden met domain controller...")
+print_info("Verbinden met domain controller...")
 server = Server(os.environ["LDAP_HOST"], get_info=ALL)
 conn = Connection(server, user=os.environ["LDAP_USER"], password=os.environ["LDAP_PASS"], auto_bind=True)
-print(f"[INFO] Verbonden met {server.host}.")
+print_info(f"Verbonden met {server.host}.")
 
 base_dn = "DC=buunk,DC=org"
 van_user = os.environ["vangebruiker"]
@@ -21,7 +30,7 @@ sync = os.environ["sync"].lower() == "true"
 def get_user_entry(username):
     conn.search(base_dn, f"(sAMAccountName={username})", attributes=["distinguishedName", "memberOf"])
     if not conn.entries:
-        print(f"[ERROR] Gebruiker '{username}' niet gevonden.")
+        print_error(f"Gebruiker '{username}' niet gevonden.")
         sys.exit(1)
     return conn.entries[0]
 
@@ -51,20 +60,20 @@ for group_dn in to_remove:
     else:
         failed_remove.append((group_dn, conn.result['message']))
 
-print("\n[RESULTAAT]")
+print_info("Kopieerproces voltooid.\n")
 if added:
-    print("[INFO] Toegevoegd:")
+    print_info("Toegevoegd aan:")
     for g in added:
-        print(" -", g)
+        print(f" - {g}")
 if removed:
-    print("[INFO] Verwijderd:")
+    print_info("Verwijderd uit:")
     for g in removed:
-        print(" -", g)
+        print(f" - {g}")
 if failed_add:
-    print("[ERROR] Mislukte toevoegingen:")
+    print_error("Mislukte toevoegingen:")
     for g, msg in failed_add:
         print(f" - {g}: {msg}")
 if failed_remove:
-    print("[ERROR] Mislukte verwijderingen:")
+    print_error("Mislukte verwijderingen:")
     for g, msg in failed_remove:
         print(f" - {g}: {msg}")

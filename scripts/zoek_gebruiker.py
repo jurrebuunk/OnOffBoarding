@@ -1,29 +1,35 @@
 from ldap3 import Server, Connection, ALL, SUBTREE
 import os
 import sys
+from colorama import init, Fore, Style
 
-# Vereiste LDAP-omgevingvariabelen
+init(autoreset=True)
+
+def print_info(msg):
+    print(f"{Fore.GREEN}[INFO]{Style.RESET_ALL} {msg}")
+
+def print_error(msg):
+    print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {msg}")
+
 required_env = ["LDAP_HOST", "LDAP_USER", "LDAP_PASS"]
-
 missing = [var for var in required_env if not os.getenv(var)]
 if missing:
-    print(f"[ERROR] Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
+    print_error(f"Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
     sys.exit(1)
 
-print("[INFO] Verbinden met domain controller...")
+print_info("Verbinden met domain controller...")
 server = Server(os.environ["LDAP_HOST"], get_info=ALL)
 conn = Connection(server, user=os.environ["LDAP_USER"], password=os.environ["LDAP_PASS"], auto_bind=True)
-print(f"[INFO] Verbonden met {server.host}.")
+print_info(f"Verbonden met {server.host}.")
 
 base_dn = "DC=buunk,DC=org"
 search_user = os.getenv("search")
 if not search_user:
-    print("[ERROR] Omgevingsvariabele 'search' is niet gezet.")
+    print_error("Omgevingsvariabele 'search' is niet gezet.")
     sys.exit(1)
 
-print(f"[INFO] Gezocht wordt op: {search_user}")
+print_info(f"Gezocht wordt op: {search_user}")
 
-# Filter zoekt op sAMAccountName, cn (full name), givenName (voornaam), sn (achternaam)
 search_filter = (
     "(&"
     "(objectClass=user)"
@@ -43,13 +49,13 @@ conn.search(
     attributes=['cn', 'sAMAccountName', 'mail', 'memberOf', 'userAccountControl']
 )
 
-print("[INFO] Resultaten:")
+print_info("Resultaten:")
 for entry in conn.entries:
     cn = entry.cn.value
     sam = entry.sAMAccountName.value
     mail = entry.mail.value if 'mail' in entry else "n/a"
     uac = int(entry.userAccountControl.value)
-    enabled = not (uac & 0x2)  # 0x2 = ACCOUNTDISABLE
+    enabled = not (uac & 0x2)
     status = "Ingeschakeld" if enabled else "Uitgeschakeld"
 
     print(f"CN: {cn}, SAM: {sam}, Mail: {mail}, Status: {status}")
@@ -62,4 +68,4 @@ for entry in conn.entries:
     else:
         print("  Groepen: geen")
 
-print(f"[INFO] Totaal gevonden gebruikers: {len(conn.entries)}")
+print_info(f"Totaal gevonden gebruikers: {len(conn.entries)}")

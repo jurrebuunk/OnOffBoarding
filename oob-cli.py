@@ -230,7 +230,7 @@ def disable_gebruiker():
         print_info("Lokaal uitgevoerd.")
 
 commands = {
-    "create_user": create_user,
+    "maak_gebruiker": create_user,
     "zoek_gebruiker": zoek_gebruiker,
     "voeg_gebruiker_aan_groep": voeg_gebruiker_aan_groep,
     "copy_gebruiker_groepen": copy_gebruiker_groepen,

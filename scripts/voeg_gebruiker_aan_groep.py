@@ -1,23 +1,31 @@
 from ldap3 import Server, Connection, ALL, MODIFY_ADD
 import os
 import sys
+from colorama import init, Fore, Style
+
+init(autoreset=True)
+
+def print_info(msg):
+    print(f"{Fore.GREEN}[INFO]{Style.RESET_ALL} {msg}")
+
+def print_error(msg):
+    print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {msg}")
 
 required_env = ["LDAP_HOST", "LDAP_USER", "LDAP_PASS", "username", "group"]
 missing = [var for var in required_env if not os.getenv(var)]
 if missing:
-    print(f"[ERROR] Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
+    print_error(f"Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
     sys.exit(1)
 
-print("[INFO] Verbinden met domain controller...")
+print_info("Verbinden met domain controller...")
 server = Server(os.environ["LDAP_HOST"], get_info=ALL)
 conn = Connection(server, user=os.environ["LDAP_USER"], password=os.environ["LDAP_PASS"], auto_bind=True)
-print(f"[INFO] Verbonden met {server.host}.")
+print_info(f"Verbonden met {server.host}.")
 
 username = os.environ["username"]
 group_names = [g.strip() for g in os.environ["group"].split(',')]
 base_dn = "DC=buunk,DC=org"
 
-# Zoek de DN van de gebruiker
 conn.search(
     base_dn,
     f"(sAMAccountName={username})",
@@ -25,11 +33,11 @@ conn.search(
 )
 
 if not conn.entries:
-    print(f"[ERROR] Gebruiker '{username}' niet gevonden.")
+    print_error(f"Gebruiker '{username}' niet gevonden.")
     sys.exit(1)
 
 user_dn = conn.entries[0].distinguishedName.value
-print(f"[INFO] Gebruiker gevonden: {user_dn}")
+print_info(f"Gebruiker gevonden: {user_dn}")
 
 success_groups = []
 failed_groups = []
@@ -43,8 +51,8 @@ for group_name in group_names:
 
 print("\n[RESULTAAT]")
 if success_groups:
-    print(f"[INFO] Succesvol toegevoegd aan: {', '.join(success_groups)}")
+    print_info(f"Succesvol toegevoegd aan: {', '.join(success_groups)}")
 if failed_groups:
-    print("[ERROR] Mislukt bij:")
+    print_error("Mislukt bij:")
     for g, msg in failed_groups:
         print(f"  - {g}: {msg}")

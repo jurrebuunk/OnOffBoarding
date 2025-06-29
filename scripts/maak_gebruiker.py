@@ -2,32 +2,44 @@ from ldap3 import Server, Connection, ALL
 import paramiko
 import os
 import sys
+from colorama import init, Fore, Style
 
-# Vereiste LDAP- en SSH-omgevingvariabelen
+init(autoreset=True)
+
+def print_info(msg):
+    print(f"{Fore.GREEN}[INFO]{Style.RESET_ALL} {msg}")
+
+def print_error(msg):
+    print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {msg}")
+
+def print_success(msg):
+    print(f"{Fore.CYAN}[SUCCESS]{Style.RESET_ALL} {msg}")
+
+def print_debug(msg):
+    print(f"{Fore.YELLOW}[DEBUG]{Style.RESET_ALL} {msg}")
+
 required_env = [
     "LDAP_HOST", "LDAP_USER", "LDAP_PASS",
     "cn", "givenName", "sn", "name",
     "userPrincipalName", "sAMAccountName",
-    "userPassword"  # Toegevoegd voor wachtwoordinstelling via SSH
+    "userPassword"
 ]
 
 missing = [var for var in required_env if not os.getenv(var)]
 if missing:
-    print(f"[ERROR] Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
+    print_error(f"Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
     sys.exit(1)
 
-# LDAP server connectie
-print("[INFO] Verbinden met domain controller via LDAP...")
+# LDAP connectie
+print_info("Verbinden met domain controller via LDAP...")
 server = Server(os.environ["LDAP_HOST"], get_info=ALL)
 conn = Connection(server, user=os.environ["LDAP_USER"], password=os.environ["LDAP_PASS"], auto_bind=True)
-print(f"[INFO] Verbonden met {server.host} via LDAP.")
+print_info(f"Verbonden met {server.host} via LDAP.")
 
 dn = f"CN={os.environ['cn']},OU=Domain-Users,DC=buunk,DC=org"
+print_info(f"Aanmaken van gebruiker: {os.environ['cn']}")
+print_debug(f"DN: {dn}")
 
-print(f"[INFO] Aanmaken van gebruiker: {os.environ['cn']}")
-print(f"[DEBUG] DN: {dn}")
-
-# Basis attributen
 attributes = {
     'cn': os.environ['cn'],
     'givenName': os.environ['givenName'],
@@ -38,24 +50,21 @@ attributes = {
     'userAccountControl': 544
 }
 
-# Optionele attributen
-optional_attrs = ['initials', 'mail', 'telephoneNumber']
-for attr in optional_attrs:
+for attr in ['initials', 'mail', 'telephoneNumber']:
     val = os.getenv(attr)
     if val:
         attributes[attr] = val
 
-# Toevoegen gebruiker
 result = conn.add(dn, ['top', 'person', 'organizationalPerson', 'user'], attributes)
 
 if result:
-    print("[SUCCESS] Gebruiker succesvol toegevoegd via LDAP.")
+    print_success("Gebruiker succesvol toegevoegd via LDAP.")
 else:
-    print(f"[ERROR] Fout bij toevoegen gebruiker: {conn.result}")
+    print_error(f"Fout bij toevoegen gebruiker: {conn.result}")
     sys.exit(1)
 
-# SSH: wachtwoord instellen + gebruiker activeren + wachtwoord wijziging afdwingen
-print("[INFO] Verwerken van wachtwoord en activatie via SSH...")
+# SSH: wachtwoord instellen en gebruiker activeren
+print_info("Verwerken van wachtwoord en activatie via SSH...")
 
 ssh_host = os.environ["LDAP_HOST"]
 ssh_user = os.environ["LDAP_USER"]
@@ -76,19 +85,18 @@ try:
     ssh.connect(ssh_host, username=ssh_user, password=ssh_pass)
 
     stdin, stdout, stderr = ssh.exec_command(ps_command)
-
-    out = stdout.read().decode()
-    err = stderr.read().decode()
+    out = stdout.read().decode().strip()
+    err = stderr.read().decode().strip()
 
     if out:
-        print(f"[SSH OUTPUT] {out.strip()}")
+        print_debug(f"[SSH OUTPUT] {out}")
     if err:
-        print(f"[SSH ERROR] {err.strip()}")
+        print_error(f"[SSH ERROR] {err}")
 
     ssh.close()
-    print(f"[SUCCESS] Wachtwoord ingesteld en gebruiker '{target_user}' geactiveerd.")
+    print_success(f"Wachtwoord ingesteld en gebruiker '{target_user}' geactiveerd.")
 except Exception as e:
-    print(f"[ERROR] SSH-fout: {str(e)}")
+    print_error(f"SSH-fout: {str(e)}")
     sys.exit(1)
 
-print(f"[EINDE] Gebruiker '{os.environ['cn']}' is volledig verwerkt.")
+print_info(f"EINDE: Gebruiker '{os.environ['cn']}' is volledig verwerkt.")
