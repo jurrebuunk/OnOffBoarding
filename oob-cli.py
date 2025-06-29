@@ -148,9 +148,64 @@ def zoek_gebruiker():
         os.system("python scripts/zoek_gebruiker.py")
         print_info("Lokaal uitgevoerd.")
 
+def voeg_gebruiker_aan_groep():
+    input_fields = [
+        "username",
+        "group"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
+    }
+
+    user_data = get_fields_input(input_fields)
+
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=6, groupname="voeg_gebruiker_aan_groep", env_vars=user_data)
+        start_task(template_id=5)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/voeg_gebruiker_aan_groep.py")
+        print_info("Lokaal uitgevoerd.")
+
+def copy_gebruiker_groepen():
+    input_fields = [
+        "vangebruiker",
+        "naargebruiker"
+    ]
+
+    static_fields = {
+        "LDAP_HOST": confr("LDAP_HOST"),
+        "LDAP_USER": confr("LDAP_USER"),
+        "LDAP_PASS": confr("LDAP_PASS")
+    }
+
+    user_data = get_fields_input(input_fields)
+
+    for key, value in static_fields.items():
+        user_data[key] = value
+
+    if api_config:
+        set_env_vars(vargroup_id=7, groupname="copy_gebruiker_groepen", env_vars=user_data)
+        start_task(template_id=6)
+    else:
+        for key, value in user_data.items():
+            os.environ[key] = value
+        os.system("python scripts/copy_gebruiker_groepen.py")
+        print_info("Lokaal uitgevoerd.")
+
+
 commands = {
     "create_user": create_user,
     "zoek_gebruiker": zoek_gebruiker,
+    "voeg_gebruiker_aan_groep": voeg_gebruiker_aan_groep,
+    "copy_gebruiker_groepen": copy_gebruiker_groepen,
 }
 
 def load_api_config(path="api.json"):
