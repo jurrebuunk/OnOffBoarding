@@ -99,7 +99,7 @@ last_var = tk.StringVar()
 init_var = tk.StringVar()
 
 # Load user icon
-icon_path = "user_icon.png"
+icon_path = "lib\\user_icon.png"
 if os.path.exists(icon_path):
     user_img = Image.open(icon_path).resize((48, 48))
     user_photo = ImageTk.PhotoImage(user_img)
@@ -119,7 +119,7 @@ def change_profile_picture():
             bottom = top + min_dim
             cropped = img.crop((left, top, right, bottom)).resize((96, 96))
 
-            cropped.save("profile_temp.jpg", format="JPEG")
+            cropped.save("lib\\profile_temp.jpg", format="JPEG")
 
             display_img = cropped.resize((48, 48), Image.LANCZOS)
             new_photo = ImageTk.PhotoImage(display_img)
