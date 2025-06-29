@@ -73,10 +73,10 @@ If no config file is provided, defaults to `api.json`.
 ## Requirements
 
 * Python 3.x
-* Modules: `requests`, `colorama`
+* Modules: `requests`, `colorama`, `unidecode`
 
 Install dependencies:
 
 ```bash
-pip install requests colorama
+pip install requests colorama unidecode
 ```
